@@ -17,6 +17,7 @@ class Bbox_Getter:
     closing_ksize: tuple = (5, 5)
     opening_ksize: tuple = (10, 10)
 
+
     def get_binary_image(self, img:np.ndarray,
                         b_thresh=(0, 255), g_thresh=(0, 255), r_thresh=(0, 255))->np.ndarray:
         '''
@@ -35,25 +36,28 @@ class Bbox_Getter:
         final_binary = binary_list[0] * binary_list[1] * binary_list[2]
         return final_binary
 
-    def closing(self, img:np.ndarray, kernel_size=(5,5))->np.ndarray:
+
+    def closing(self, img:np.ndarray)->np.ndarray:
         '''
         Eliminate noise by closing process.
         input: binary image
         output: closed image
         '''
-        kernel = np.ones(kernel_size, np.uint8)
+        kernel = np.ones(self.closing_ksize, np.uint8)
         erosion = cv2.erode(img, kernel, iterations=1)
         return erosion
 
-    def opening(self, img:np.ndarray, kernel_size=(10,10))->np.ndarray:
+
+    def opening(self, img:np.ndarray)->np.ndarray:
         '''
         Reattach areas that have been separated by closing.
         input: binary image
         output: opened image
         '''
-        kernel = np.ones(kernel_size, np.uint8)
+        kernel = np.ones(self.opening_ksize, np.uint8)
         dilation = cv2.dilate(img, kernel, iterations=1)
         return dilation
+
 
     def get_bbox_from_labeled_binary(self, binary_img:np.ndarray)->list:
         '''
@@ -73,6 +77,7 @@ class Bbox_Getter:
             boxes.append((x1, y1, x2, y2))
         return boxes
 
+
     def describe_bbox(self, img:np.ndarray, boxes:list)->None:
         '''
         Show image with Bbox.
@@ -85,20 +90,32 @@ class Bbox_Getter:
         cv2.imshow(window_name, img)
         cv2.waitKey(0)
 
-    def choice_by_area(self, boxes:list, low_thresh:int, high_thresh:int):
+
+    def choice_by_area(self, boxes:list, low_thresh_rate:float, high_thresh_rate:float)->list:
         '''
         remove images by area value.
+        caluculate mean and remove outliers.
         '''
+        area_list = []
         final_list = []
         print(f"befor area choice: {len(boxes)}")
         for box in boxes:
             width = box[2] - box[0]
             height = box[3] - box[1]
             area = width*height
+            area_list.append(area)
+
+        area_mean = np.mean(area_list)
+        low_thresh = area_mean*low_thresh_rate
+        high_thresh = area_mean*high_thresh_rate
+
+        for box, area in zip(boxes, area_list):
             if(area > low_thresh)&(area < high_thresh):
                 final_list.append(box)
+
         print(f"after area choice: {len(final_list)}")
         return final_list
+
 
     def choice_by_aspect(self, boxes:list, low_thresh:int, high_thresh:int):
         '''
@@ -115,6 +132,7 @@ class Bbox_Getter:
         print(f"after aspect choice: {len(final_list)}")
         return final_list
 
+
     def describe_binary(self, img:np.ndarray)->None:
         '''
         show binary image
@@ -127,6 +145,7 @@ class Bbox_Getter:
 
         cv2.imshow(window_name, binary*255)
         cv2.waitKey(0)
+
 
     def describe_closed(self, img:np.ndarray)->None:
         '''
@@ -141,6 +160,7 @@ class Bbox_Getter:
 
         cv2.imshow(window_name, closed*255)
         cv2.waitKey(0)
+
 
     def describe_opened(self, img:np.ndarray)->None:
         '''
@@ -158,6 +178,7 @@ class Bbox_Getter:
 
         cv2.imshow(window_name, opened*255)
         cv2.waitKey(0)
+
 
     def get_bbox(self, img:np.ndarray)->list:
         '''
@@ -185,15 +206,15 @@ def main():
     g_thresh = (128, 255)
     r_thresh = (0, 255)
 
-    area_low_thresh = 1000
-    area_high_thresh = 3000
+    area_low_thresh_rate = 0.5
+    area_high_thresh_rate = 1.5
 
     img_path = './data/test_img.jpg'
     img = cv2.imread(img_path)
     img = cv2.resize(img, (448, 448))
 
     getter = Bbox_Getter(b_thresh, g_thresh, r_thresh,
-        area_low_thresh, area_high_thresh)
+        area_low_thresh_rate, area_high_thresh_rate)
     boxes = getter.get_bbox(img)
 
     # テスト どれか一つだけ実行
