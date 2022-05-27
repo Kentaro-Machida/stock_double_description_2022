@@ -14,7 +14,8 @@
 * labeling.py  
 列ごとにフォルダ分割されているストックの画像データをcsvファイルに従って,
 singleフォルダ, doubleフォルダ, deadフォルダ, not_bloomedフォルダの
-4つに分割を行う. 
+4つに分割を行う. 設定はlabeling_config.iniを書き換えることで行える.   
+なお, labeling.ipynbはlabeling.pyの元となったipynbである. 
 ```
 data/
 　├ csvs/
@@ -56,7 +57,8 @@ output
 ---
 * split_dataset.py
 singleフォルダとdoubleフォルダを入力で指定し, 任意の比率でtrain, val, test
-のフォルダに分割する.
+のフォルダに分割する. 出力先ディレクトリなどの設定はsplit_dataset.iniの
+configファイルで指定できる. 
 ```
 input
 　├ single/...
