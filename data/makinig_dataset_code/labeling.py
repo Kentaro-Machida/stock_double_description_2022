@@ -3,10 +3,10 @@ import glob
 import shutil
 import pandas as pd
 import configparser
+import sys
 """
 csvファイルに従って画像をsingle, doubleフォルダに振り分ける
 """
-
 
 # 4つのディレクトリを作成する
 # すでに存在していても消去するので注意
@@ -18,11 +18,17 @@ def make_4_dirs(out_dir:str)->None:
     os.makedirs(os.path.join(out_dir,'not_bloomed'),exist_ok=True)
 
 def make_dataset(data_dir:str,out_dir:str,csv_file:str):
-    
-    dir_alpabet_list = glob.glob(os.path.join(data_dir,'*'))
+
+    dir_alpabet_list = glob.glob(data_dir+'/*')
+    dir_alpabet_list.sort()
+    if len(dir_alpabet_list)==0:
+        print(f"'data_dir' in your config file 'labeling_config.ini' is wrong.")
+        sys.exit(1)
+    print(dir_alpabet_list)
 
     df = pd.read_csv(csv_file)
     natural_alp = list(df.columns)
+    natural_alp.sort()
 
     for dir_alpabet,natural in zip(dir_alpabet_list,natural_alp):
         images_2d_list = []
@@ -45,10 +51,10 @@ def make_dataset(data_dir:str,out_dir:str,csv_file:str):
             print('The number of images in folder ' + dir_alpabet + ' is not multiple of 16.')
         # ディレクトリの数が16でなければ移動を行わない。
         elif(len(dir_alpabet_list)!=16):
-            print(dir_alpabet_list)
             print('The number of directory is not 16.')
         else:
             for img_list, judge in zip(images_2d_list,judge_list):
+                print(f"{img_list}, csv_low: {natural}, judge: {judge}")
                 for p in img_list:
                     if judge == 8:
                         try:
@@ -79,6 +85,9 @@ def main():
     data_dir = config['data_dir']
     out_dir = config['out_dir']
     csv_pth = config['csv_pth']
+    print(f"data_dir: {data_dir}")
+    print(f"out_dir: {out_dir}")
+    print(f"csv_pth: {csv_pth}")
 
     make_4_dirs(out_dir)
     make_dataset(data_dir, out_dir, csv_pth)

@@ -1,3 +1,4 @@
+from genericpath import exists
 import glob
 import os
 import sys
@@ -39,6 +40,7 @@ def copy_data_to_split_dir(train_val_test_dict:dict, label:str, output_dir:str)-
 
 def main():
     parser = configparser.ConfigParser()
+    parser.read('split_dataset.ini')
     config = parser['DEFAULT']
 
     single_path = config['single_path']
@@ -56,14 +58,10 @@ def main():
 
     np.random.seed(RANDOM_SEED)
 
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-    else:
-        print(output_dir,' has been already existed.')
-        sys.exit(1)
+    os.makedirs(output_dir,exist_ok=True)
 
     single_tvt_dict = split_pth_list(single_pth_list,TRAIN_LATE,VAL_LATE)
-    double_tvt_dict = split_pth_list(double_pth_list)
+    double_tvt_dict = split_pth_list(double_pth_list,TRAIN_LATE,VAL_LATE)
 
     copy_data_to_split_dir(single_tvt_dict,'single',output_dir)
     copy_data_to_split_dir(double_tvt_dict,'double',output_dir)
