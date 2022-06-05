@@ -21,6 +21,9 @@ def split_pth_list(pth_list:list, train_rate:float, val_rate:float)->dict:
     train_num = int(list_num*train_rate)
     val_num = int(list_num*val_rate)
     test_num = list_num - train_num - val_num
+    print(f"{train_num=}")
+    print(f"{val_num=}")
+    print(f"{test_num=}")
 
     train_list = pth_list[0:train_num]
     val_list = pth_list[train_num : train_num + val_num]
@@ -60,7 +63,9 @@ def main():
 
     os.makedirs(output_dir,exist_ok=True)
 
+    print('single')
     single_tvt_dict = split_pth_list(single_pth_list,TRAIN_LATE,VAL_LATE)
+    print('double')
     double_tvt_dict = split_pth_list(double_pth_list,TRAIN_LATE,VAL_LATE)
 
     copy_data_to_split_dir(single_tvt_dict,'single',output_dir)
