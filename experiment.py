@@ -8,7 +8,7 @@ import bbox_searcher
 import cv2
 
 config = configparser.ConfigParser()
-config_path = './config.ini'
+config_path = './roi_config.ini'
 config.read(config_path)
 
 img_path=config['DEFAULT']['img_path']
