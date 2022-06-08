@@ -2,38 +2,13 @@ from cv2 import COLOR_BGR2RGB
 import cv2
 import numpy as np
 import torch
+import configparser
 import torchvision.models as model
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from torchvision import transforms
 
 from bbox_searcher import Bbox_Getter
-
-def get_bbox(img:np.ndarray)->list:
-    
-    b_thresh = (0, 255)
-    g_thresh = (128, 255)
-    r_thresh = (0, 255)
-
-    area_low_thresh_rate = 0.5
-    area_high_thresh_rate = 1.5
-
-    aspect_low_thresh=0.7
-    aspect_high_thresh=1.3
-
-    closing_ksize=(5, 5)
-    opening_ksize=(10, 10)
-
-    getter = Bbox_Getter(
-        b_thresh, g_thresh, r_thresh,
-        area_low_thresh_rate, area_high_thresh_rate,
-        aspect_low_thresh, aspect_high_thresh,
-        closing_ksize, opening_ksize
-            )
-
-    boxes = getter.get_bbox(img)
-
-    return boxes
 
 def get_RoIs(img:np.ndarray, boxes, out_size=224) -> list:
     """
@@ -51,6 +26,11 @@ def get_RoIs(img:np.ndarray, boxes, out_size=224) -> list:
     return cut_img_list
 
 def tensor_preprocess(img:np.ndarray)->torch.Tensor:
+    """"
+    画像の前処理を行う.
+    画素値範囲を[0, 1] and (W, H, C)を(C, W, H)に変換
+    image netの平均画素と分散で標準化
+    """
     normalizer = transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     tensorer = transforms.ToTensor()
     input = tensorer(img)
@@ -59,17 +39,44 @@ def tensor_preprocess(img:np.ndarray)->torch.Tensor:
     return input
 
 def main():
-    img_size = (448, 448)
-    img_path = './data/sample_images/test_img.jpg'
 
+    # get Bounding Boxes with parameters in "roi_config.ini"
+    config = configparser.ConfigParser()
+    config_path = './roi_config.ini'
+    config.read(config_path)
+
+    img_path=config['DEFAULT']['img_path']
+    img_size=(int(config['DEFAULT']['img_size']), int(config['DEFAULT']['img_size']))
     img = cv2.imread(img_path)
     img = cv2.resize(img, img_size)
-    img = cv2.cvtColor(img, COLOR_BGR2RGB)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
-    model_path = "./trained_models/Efficientnet_b3.pth"
-    trained_model = torch.load(model_path ,map_location=torch.device('cpu'))
+    b_thresh = (int(config['DEFAULT']['b_thresh_l']),
+        int(config['DEFAULT']['b_thresh_h']))
 
-    boxes = get_bbox(img)
+    g_thresh = (int(config['DEFAULT']['g_thresh_l']),
+        int(config['DEFAULT']['g_thresh_h']))
+
+    r_thresh = (int(config['DEFAULT']['r_thresh_l']),
+        int(config['DEFAULT']['r_thresh_h']))
+
+    area_low_thresh_rate=float(config['DEFAULT']['area_low_thresh_rate'])
+    area_high_thresh_rate=float(config['DEFAULT']['area_high_thresh_rate'])
+
+    aspect_low_thresh=float(config['DEFAULT']['aspect_low_thresh'])
+    aspect_high_thresh=float(config['DEFAULT']['aspect_high_thresh'])
+
+    closing_ksize = (int(config['DEFAULT']['closing_ksize']), int(config['DEFAULT']['closing_ksize']))
+    opening_ksize = (int(config['DEFAULT']['opening_ksize']), int(config['DEFAULT']['opening_ksize']))
+
+    getter = Bbox_Getter(
+        b_thresh, g_thresh, r_thresh,
+        area_low_thresh_rate, area_high_thresh_rate,
+        aspect_low_thresh, aspect_high_thresh,
+        closing_ksize, opening_ksize
+        )
+
+    boxes = getter.get_bbox(img)
 
     # RoI画像を抽出
     RoIs = get_RoIs(img, boxes)
@@ -79,6 +86,8 @@ def main():
 
     # すべてのRoI4次元tensorを連結
     input_batch = torch.cat(RoIs)
+
+    trained_model = torch.load(config['DEFAULT']['model_path'])
 
     # 確率の計算
     logits = trained_model(input_batch)

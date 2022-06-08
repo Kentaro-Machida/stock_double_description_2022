@@ -7,6 +7,7 @@ import configparser
 import bbox_searcher
 import cv2
 
+# get Bounding Boxes with parameters in "roi_config.ini"
 config = configparser.ConfigParser()
 config_path = './roi_config.ini'
 config.read(config_path)
