@@ -25,7 +25,8 @@ pip install numpy
 bbox_searcher.py として実装されており, 以下のように使用する. 
 
 ```
-import bbox_searcher.Bbox_Getter
+import bbox_searcher
+import cv2
 
 b_thresh = (0, 255)
 g_thresh = (128, 255)
@@ -40,7 +41,7 @@ aspect_high_thresh=1.3
 closing_ksize=(5, 5)
 opening_ksize=(10, 10)
 
-img_path = './data/test_img.jpg'
+img_path = './data/sample_images/test_img.jpg'
 img = cv2.imread(img_path)
 img = cv2.resize(img, (448, 448))
 
