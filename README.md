@@ -8,8 +8,7 @@
 
 ## 環境構築
 ```
-pip install opencv-python-headless==4.5.5.64
-pip install numpy
+pip install -r requirements.txt
 ```
 
 ## 領域抽出
@@ -59,7 +58,7 @@ x2, y2は右下座標である. xは横軸, yは縦軸を表す.
 
 ## パラメータ調整
 experiment.pyを実行することで物体検出がうまく行われているか確認できる.
-もし, パラメータの変更が必要であれば, config.iniを変更することで, 条件を
+もし, パラメータの変更が必要であれば, roi_config.iniを変更することで, 条件を
 変えることができる.
 
 ```
@@ -69,3 +68,21 @@ python experiment.py
 ## dataディレクトリ
 収集した画像データをcsvファイルのラベルに従ってディレクトリ分割するコード
 が入っている. データそのものは重いので入っていない. 
+
+## 分類モデルの学習
+finetuning_stock.ipynbは, torchvisionにあるモデルをロードし, 
+finetuningを行うnotebookである. 全てのセルを実行することで, 訓練モデル
+が出力される. パラメータセルの変数でモデルの選択, ハイパーパラメータの選択等
+を行う. 行われる処理は以下の通りである.
+
+1. torchvisionによるモデルのロード
+2. pytorchによるモデルの学習
+3. モデルを保存
+
+## 訓練済みモデルによるRoIの分類
+roi_double_description.pyは, bbox_searcherクラスで抽出したRoIを分類モデルに
+入力し, 八重鑑別を行い, Bboxと確率値を描画した画像を出力するコードである. パラメータ等は
+roi_config.iniを参照する. 
+```
+python roi_double_description.py
+```
