@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import sys
 from dataclasses import dataclass
 
 @dataclass
@@ -11,11 +12,17 @@ class Bbox_Getter:
     area_low_thresh: int
     area_high_thresh: int
 
+    masking_type: str = "rgb" #  rgb or hsv
+
     aspect_low_thresh: float = 0.7
     aspect_high_thresh: float = 1.3
 
     closing_ksize: tuple = (5, 5)
     opening_ksize: tuple = (10, 10)
+
+    h_thresh: tuple = (30, 90)
+    s_thresh: tuple = (64, 255)
+    v_thresh: tuple = (0, 255)
 
 
     def get_binary_image(self, img:np.ndarray,
@@ -27,6 +34,27 @@ class Bbox_Getter:
         output: binary image
         '''
         thresh_list = [b_thresh, g_thresh, r_thresh]
+        binary_list = []
+
+        for i, thresh in enumerate(thresh_list):
+            binary_img = np.uint8((img[:,:,i] > thresh[0])*(img[:,:,i]<thresh[1]))
+            binary_list.append(binary_img)
+
+        final_binary = binary_list[0] * binary_list[1] * binary_list[2]
+        return final_binary
+
+
+    def get_binary_image_hsv(self, img:np.ndarray,
+                        h_thresh=(30, 90), s_thresh=(64, 255), v_thresh=(0, 255))->np.ndarray:
+        '''
+        Outputs a binarized image according to HSV conditions.
+        Please input image loaded by 'cv2.imread()'.
+        input: np.ndarray(B, G, R)
+        output: binary image
+        '''
+        img = cv2.cvtColor(np.uint8(img), cv2.COLOR_BGR2HSV)
+
+        thresh_list = [h_thresh, s_thresh, v_thresh]
         binary_list = []
 
         for i, thresh in enumerate(thresh_list):
@@ -91,7 +119,8 @@ class Bbox_Getter:
         cv2.waitKey(0)
 
 
-    def choice_by_area(self, boxes:list, low_thresh_rate:float, high_thresh_rate:float)->list:
+    def choice_by_area(self, boxes:list, low_thresh_rate:float, high_thresh_rate:float,
+                        img_size:tuple)->list:
         '''
         remove images by area value.
         caluculate mean and remove outliers.
@@ -105,9 +134,8 @@ class Bbox_Getter:
             area = width*height
             area_list.append(area)
 
-        area_mean = np.mean(area_list)
-        low_thresh = area_mean*low_thresh_rate
-        high_thresh = area_mean*high_thresh_rate
+        low_thresh = img_size[0]*img_size[1]*(low_thresh_rate**2)
+        high_thresh = img_size[0]*img_size[1]*(high_thresh_rate**2)
 
         for box, area in zip(boxes, area_list):
             if(area > low_thresh)&(area < high_thresh):
@@ -137,11 +165,17 @@ class Bbox_Getter:
         '''
         show binary image
         '''
-        binary = self.get_binary_image(img, b_thresh=self.b_thresh,
+        
+        if self.masking_type=='rgb':
+            binary = self.get_binary_image(img, b_thresh=self.b_thresh,
                                          g_thresh=self.g_thresh, r_thresh=self.r_thresh)
-
-        window_name = "binary image BGR thresh: ({}, {}, {})".format(
-            self.b_thresh,self.g_thresh,self.r_thresh)
+            window_name = "binary image RGB thresh: ({}, {}, {})".format(
+                self.b_thresh,self.g_thresh,self.r_thresh)
+        elif self.masking_type=='hsv':
+            binary = self.get_binary_image_hsv(img, h_thresh=self.h_thresh,
+                                         s_thresh=self.s_thresh, v_thresh=self.v_thresh)
+            window_name = "binary image HSV thresh: ({}, {}, {})".format(
+                self.h_thresh,self.s_thresh,self.v_thresh)
 
         cv2.imshow(window_name, binary*255)
         cv2.waitKey(0)
@@ -154,8 +188,8 @@ class Bbox_Getter:
         binary = self.get_binary_image(img, b_thresh=self.b_thresh,
                                          g_thresh=self.g_thresh, r_thresh=self.r_thresh)
         closed = self.closing(binary)
-        window_name = "closing image BGR thresh: ({}, {}, {})".format(
-            self.b_thresh,self.g_thresh,self.r_thresh)
+        window_name = "closing image {} thresh: ({}, {}, {})".format(
+            self.masking_type,self.b_thresh,self.g_thresh,self.r_thresh)
         window_name += " kernel_size: {}".format(self.closing_ksize)
 
         cv2.imshow(window_name, closed*255)
@@ -171,8 +205,8 @@ class Bbox_Getter:
         closed = self.closing(binary)
         opened = self.opening(closed)
 
-        window_name = "closing image BGR thresh: ({}, {}, {})".format(
-            self.b_thresh,self.g_thresh,self.r_thresh)
+        window_name = "opened image {} thresh: ({}, {}, {})".format(
+            self.masking_type,self.b_thresh,self.g_thresh,self.r_thresh)
         window_name += " closing_k_size: {}".format(self.closing_ksize)
         window_name += " opening_k_size: {}".format(self.opening_ksize)
 
@@ -186,15 +220,24 @@ class Bbox_Getter:
         input: image
         output: list of Bounding box
         '''
-        binary = self.get_binary_image(img, b_thresh=self.b_thresh,
-                                         g_thresh=self.g_thresh, r_thresh=self.r_thresh)
+        img_shape = img.shape
+        img_size = (img_shape[0], img_shape[1])
+
+        if self.masking_type=="hsv":
+            binary = self.get_binary_image_hsv(img, h_thresh=self.h_thresh,
+                                         s_thresh=self.s_thresh, v_thresh=self.v_thresh)
+        elif self.masking_type=='rgb':
+            binary = self.get_binary_image(img, b_thresh=self.b_thresh,
+                                            g_thresh=self.g_thresh, r_thresh=self.r_thresh)
+        else:
+            print("masking_type error.")
+            sys.exit(1)
 
         closed = self.closing(binary)
         opened = self.opening(closed)
-
         boxes = self.get_bbox_from_labeled_binary(opened)
         filtered_by_area = self.choice_by_area(boxes,
-            self.area_low_thresh, self.area_high_thresh)
+            self.area_low_thresh, self.area_high_thresh, img_size)
         filtered_by_aspect = self.choice_by_aspect(filtered_by_area,
             self.aspect_low_thresh, self.aspect_high_thresh)
 
@@ -202,22 +245,36 @@ class Bbox_Getter:
 
 ##### test
 def main():
+    masking_type = "hsv"
+    img_size=(448,448)
+
     b_thresh = (0, 255)
     g_thresh = (128, 255)
     r_thresh = (0, 255)
 
-    area_low_thresh_rate = 0.5
-    area_high_thresh_rate = 1.5
+    h_thresh = (110, 140)
+    s_thresh = (180, 255)
+    v_thresh = (150, 255)
 
-    img_path = './data/test_img.jpg'
+    area_low_thresh_rate = 0.2
+    area_high_thresh_rate = 9.5
+
+    img_path = './data/sample_images/test_img.jpg'
     img = cv2.imread(img_path)
-    img = cv2.resize(img, (448, 448))
+    img = cv2.resize(img, img_size)
 
-    getter = Bbox_Getter(b_thresh, g_thresh, r_thresh,
-        area_low_thresh_rate, area_high_thresh_rate)
-    boxes = getter.get_bbox(img)
+    if masking_type=="rgb":
+        getter = Bbox_Getter(b_thresh, g_thresh, r_thresh,
+            area_low_thresh_rate, area_high_thresh_rate, masking_type=masking_type)
+        boxes = getter.get_bbox(img)
+    
+    elif masking_type=='hsv':
+        getter = Bbox_Getter(h_thresh, s_thresh, v_thresh,
+            area_low_thresh_rate, area_high_thresh_rate, masking_type=masking_type)
+        boxes = getter.get_bbox(img)
 
     # テスト どれか一つだけ実行
+    # getter.describe_binary(img)
     getter.describe_bbox(img, boxes)
     # getter.describe_closed(img)
     # getter.describe_opened(img)
