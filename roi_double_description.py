@@ -48,8 +48,10 @@ def main():
     img_path=config['DEFAULT']['img_path']
     img_size=(int(config['DEFAULT']['img_size']), int(config['DEFAULT']['img_size']))
     img = cv2.imread(img_path)
-    img = cv2.resize(img, img_size)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    bgr_img = cv2.resize(img, img_size)
+    rgb_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2RGB)
+
+    masking_type = config['DEFAULT']['masking_type']
 
     b_thresh = (int(config['DEFAULT']['b_thresh_l']),
         int(config['DEFAULT']['b_thresh_h']))
@@ -60,8 +62,17 @@ def main():
     r_thresh = (int(config['DEFAULT']['r_thresh_l']),
         int(config['DEFAULT']['r_thresh_h']))
 
-    area_low_thresh_rate=float(config['DEFAULT']['area_low_thresh_rate'])
-    area_high_thresh_rate=float(config['DEFAULT']['area_high_thresh_rate'])
+    h_thresh = (int(config['DEFAULT']['h_thresh_l']),
+    int(config['DEFAULT']['h_thresh_h']))
+
+    s_thresh = (int(config['DEFAULT']['s_thresh_l']),
+        int(config['DEFAULT']['s_thresh_h']))
+
+    v_thresh = (int(config['DEFAULT']['v_thresh_l']),
+        int(config['DEFAULT']['v_thresh_h']))
+
+    area_low_thresh_rate=1/float(config['DEFAULT']['num_per_height_h'])
+    area_high_thresh_rate=1/float(config['DEFAULT']['num_per_height_l'])
 
     aspect_low_thresh=float(config['DEFAULT']['aspect_low_thresh'])
     aspect_high_thresh=float(config['DEFAULT']['aspect_high_thresh'])
@@ -72,14 +83,16 @@ def main():
     getter = Bbox_Getter(
         b_thresh, g_thresh, r_thresh,
         area_low_thresh_rate, area_high_thresh_rate,
+        masking_type,
         aspect_low_thresh, aspect_high_thresh,
-        closing_ksize, opening_ksize
+        closing_ksize, opening_ksize,
+        h_thresh, s_thresh, v_thresh
         )
 
-    boxes = getter.get_bbox(img)
+    boxes = getter.get_bbox(bgr_img)
 
     # RoI画像を抽出
-    RoIs = get_RoIs(img, boxes)
+    RoIs = get_RoIs(rgb_img, boxes)
 
     # すべてのRoIに前処理関数をかます
     RoIs = list(map(tensor_preprocess, RoIs))
@@ -97,7 +110,7 @@ def main():
     # 実際に描画を行ってみる
     num = 0
     fig, ax = plt.subplots(figsize=(6, 6))
-    ax.imshow(img)
+    ax.imshow(rgb_img)
     for x1, y1, x2, y2 in boxes:
         prob = float(outs[num][0])
         color = (1.0,1- prob, prob)
