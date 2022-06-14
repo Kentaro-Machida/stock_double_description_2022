@@ -21,37 +21,40 @@ pip install -r requirements.txt
 6. IoUの面積の平均値を計算し, 外れ値を除去する. 
 7. IoUのアスペクト比を計算し, 正方形から遠いものを除去する. 
 
-bbox_searcher.py として実装されており, 以下のように使用する. 
+bbox_searcher.py として実装されており, 以下に使用例を示す.  
 
 ```
 import bbox_searcher
 import cv2
 
-b_thresh = (0, 255)
-g_thresh = (128, 255)
-r_thresh = (0, 255)
+    masking_type = "hsv"
+    img_size=(448,448)
 
-area_low_thresh_rate = 0.5
-area_high_thresh_rate = 1.5
+    b_thresh = (0, 255)
+    g_thresh = (128, 255)
+    r_thresh = (0, 255)
 
-aspect_low_thresh=0.7
-aspect_high_thresh=1.3
+    h_thresh = (110, 140)
+    s_thresh = (180, 255)
+    v_thresh = (150, 255)
 
-closing_ksize=(5, 5)
-opening_ksize=(10, 10)
+    area_low_thresh_rate = 0.2
+    area_high_thresh_rate = 9.5
 
-img_path = './data/sample_images/test_img.jpg'
-img = cv2.imread(img_path)
-img = cv2.resize(img, (448, 448))
+    img_path = './data/sample_images/test_img.jpg'
+    img = cv2.imread(img_path)
+    img = cv2.resize(img, img_size)
 
-getter = bbox_searcher.Bbox_Getter(
-    b_thresh, g_thresh, r_thresh,
-    area_low_thresh_rate, area_high_thresh_rate,
-    aspect_low_thresh, aspect_high_thresh,
-    closing_ksize, opening_ksize
-        )
+    if masking_type=="rgb":
+        getter = Bbox_Getter(b_thresh, g_thresh, r_thresh,
+            area_low_thresh_rate, area_high_thresh_rate, masking_type=masking_type)
+        boxes = getter.get_bbox(img)
+    
+    elif masking_type=='hsv':
+        getter = Bbox_Getter(h_thresh, s_thresh, v_thresh,
+            area_low_thresh_rate, area_high_thresh_rate, masking_type=masking_type)
+        boxes = getter.get_bbox(img)
 
-boxes = getter.get_bbox(img)
 ```
 boxesは, タプル(x1, y1, x2, y2)である. x1, y1はBboxの左上座標であり, 
 x2, y2は右下座標である. xは横軸, yは縦軸を表す. 
