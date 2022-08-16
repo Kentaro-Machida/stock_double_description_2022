@@ -185,8 +185,12 @@ class Bbox_Getter:
         '''
         show closed image
         '''
-        binary = self.get_binary_image(img, b_thresh=self.b_thresh,
-                                         g_thresh=self.g_thresh, r_thresh=self.r_thresh)
+        if self.masking_type=='rgb':
+            binary = self.get_binary_image(img, b_thresh=self.b_thresh,
+                                            g_thresh=self.g_thresh, r_thresh=self.r_thresh)
+        elif self.masking_type=='hsv':
+            binary = self.get_binary_image_hsv(img, h_thresh=self.h_thresh,
+                                         s_thresh=self.s_thresh, v_thresh=self.v_thresh)
         closed = self.closing(binary)
         window_name = "closing image {} thresh: ({}, {}, {})".format(
             self.masking_type,self.b_thresh,self.g_thresh,self.r_thresh)
@@ -200,8 +204,12 @@ class Bbox_Getter:
         '''
         show opened image
         '''
-        binary = self.get_binary_image(img, b_thresh=self.b_thresh,
-                                         g_thresh=self.g_thresh, r_thresh=self.r_thresh)
+        if self.masking_type=='rgb':
+            binary = self.get_binary_image(img, b_thresh=self.b_thresh,
+                                            g_thresh=self.g_thresh, r_thresh=self.r_thresh)
+        elif self.masking_type=='hsv':
+            binary = self.get_binary_image_hsv(img, h_thresh=self.h_thresh,
+                                         s_thresh=self.s_thresh, v_thresh=self.v_thresh)
         closed = self.closing(binary)
         opened = self.opening(closed)
 

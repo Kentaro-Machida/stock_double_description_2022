@@ -58,7 +58,7 @@ getter = bbox_searcher.Bbox_Getter(
 boxes = getter.get_bbox(img)
 
 # テスト どれか一つだけ実行
-# getter.describe_binary(img)
+getter.describe_binary(img)
 getter.describe_bbox(img, boxes)
-# getter.describe_closed(img)
-# getter.describe_opened(img)
+getter.describe_closed(img)
+getter.describe_opened(img)
