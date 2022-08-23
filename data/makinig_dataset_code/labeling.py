@@ -49,8 +49,8 @@ def make_dataset(data_dir:str,out_dir:str,csv_file:str):
         # 画像に欠けがあったら移動を行わない。
         if(len(files)%16 != 0 or len(files)==0):
             print('The number of images in folder ' + dir_alpabet + ' is not multiple of 16.')
-        # ディレクトリの数が16でなければ移動を行わない。
-        elif(len(dir_alpabet_list)!=16):
+        # ディレクトリの数が8の倍数でなければ移動を行わない。
+        elif(len(dir_alpabet_list)%16!=0):
             print('The number of directory is not 16.')
         else:
             for img_list, judge in zip(images_2d_list,judge_list):
