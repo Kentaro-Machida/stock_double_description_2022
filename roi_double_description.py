@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import torch
 import configparser
-import torchvision.models as model
+#import torchvision.models as model
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from torchvision import transforms
