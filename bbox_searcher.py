@@ -94,7 +94,7 @@ class Bbox_Getter:
         output: list of bbox tuple(x1, y1, x2, y2)
         '''
         boxes = []
-        label_num, labels = cv2.connectedComponents(binary_img)
+        label_num, labels = cv2.connectedComponents(binary_img, connectivity=8)
         for target in range(label_num):
             mask = (labels == target)
             index_list = mask.nonzero()
